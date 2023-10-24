@@ -26,6 +26,7 @@ private slots:
     void registerUser();
 
 private:
+    int loginAttempts;
     void enableAdminMode();
     void enableUserMode();
     bool checkUserPassword(const QString& username, const QString& oldPassword);
@@ -49,6 +50,7 @@ private:
     bool logged = 0;
     Admin *admin;
     QString currentUser;
+    QString enteredPassword;
     bool isAdminMode;
 };
 

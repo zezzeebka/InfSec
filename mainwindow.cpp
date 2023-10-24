@@ -17,7 +17,7 @@
 
 MainWindow::MainWindow() : admin(new Admin("ADMIN", "adminPassword")) {
     QVBoxLayout *layout = new QVBoxLayout(this);
-
+    loginAttempts = 0;
     usernameLabel = new QLabel("Username:");
     usernameInput = new QLineEdit(this);
     passwordLabel = new QLabel("Password:");
@@ -75,8 +75,7 @@ MainWindow::MainWindow() : admin(new Admin("ADMIN", "adminPassword")) {
 bool MainWindow::login(QString Username, QString Password) {
     QString username = Username;
     QString password = Password;
-
-
+    bool isLoginExist = 0;
      if (admin->getUsername() == username && admin->authenticate(password)) {
          enableAdminMode();
          QMessageBox::information(this, "Logged In", "Logged in as Admin.");
@@ -92,7 +91,7 @@ bool MainWindow::login(QString Username, QString Password) {
                      if (parts.size() >= 4 && parts[0] == username) {
                          QString storedPassword = parts[1];
                          int blocked = parts[2].toInt();
-
+                         isLoginExist = 1;
                          if (blocked == 0 && storedPassword == password) {
                              file.close();
                              enableUserMode(); // Вход разрешен
@@ -100,6 +99,8 @@ bool MainWindow::login(QString Username, QString Password) {
                              QMessageBox::information(this, "Logged in", "Common user.");
                              return true;
                          }
+                         QMessageBox::warning(this, "Ошибка", "Неверный пароль. Попробуйте еще раз.");
+                         return false;
                      }
                  }
 
@@ -108,6 +109,7 @@ bool MainWindow::login(QString Username, QString Password) {
              }
 
      }
+     QMessageBox::warning(this, "Ошибка", "Неверный логин. Попробуйте еще раз.");
      return false;
 
 }
@@ -120,9 +122,31 @@ bool MainWindow::showLoginDialog() {
         QString password = loginDialog.getPassword();
         if(login(username, password))
         {
-            logged = 1;
-            return true;
-
+            if (enteredPassword.isEmpty()){
+                QString confirmPassword = QInputDialog::getText(this, "Подтверждение пароля", "Повторите пароль:", QLineEdit::Password);
+                if (password == confirmPassword) {
+                    logged = 1;
+                    return true;
+                }
+                else {
+                    QMessageBox::warning(this, "Ошибка", "Пароли не совпадают. Попробуйте еще раз.");
+                    passwordInput->clear();
+                }
+            }
+        }
+        else
+        {
+            loginAttempts++;
+            if (loginAttempts >= 3) {
+            // Достигнуто максимальное количество попыток, закройте окно входа и завершите приложение
+            QMessageBox::critical(this, "Ошибка", "Превышено максимальное количество попыток входа.");
+            logged = 0;
+            return false;
+            }
+            else
+            {
+                //QMessageBox::warning(this, "Ошибка", "Неверный пароль. Попробуйте еще раз.");
+            }
         }
 
         // Вызывайте функцию для проверки логина и пароля
@@ -309,9 +333,12 @@ void MainWindow::loadDataFromFile() {
 void MainWindow::registerUser() {
     if (isAdminMode) {
         QString newUsername = newUsernameInput->text();
-        QString newPassword = newPasswordInput->text();
+        QString newPassword = "";
+        if(newPasswordInput->text().size()>0){
+            newPassword = newPasswordInput->text();
+        }
 
-        if (!newUsername.isEmpty() && !newPassword.isEmpty()) {
+        if (!newUsername.isEmpty()) {
             // Проверьте, что пользователь с таким именем еще не существует
             // Если все в порядке, сохраните нового пользователя в файл
             QFile file("user_data.txt");

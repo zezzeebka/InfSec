@@ -18,6 +18,7 @@ public:
 private slots:
     void quit();
 private:
+
     QLineEdit *usernameInput;
     QLineEdit *passwordInput;
     QPushButton *okButton;
